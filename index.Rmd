@@ -32,7 +32,7 @@ Please mark your calendar for March 25th from 7:30P - 8:30P ET for our next meet
 
 |Date|Presenter|Presentation|
 |:---------|:---|:---- |
-|25 February 2021|Rob Gordon|[An Introduction to Web Scraping in R](http://bit.ly/3qWogUR)<br><br> [Github site](http://bit.ly/3uJ3x9E)|
-|25 February 2021|John Hackett|[RODBC](http://bit.ly/3dMPppD)|
-|28 January 2021|Len Greski|[Reading Fixed Files in R](https://bit.ly/2ZgadgR)|
-|21 December 2020| Steve Pittard|[Predictive Modeling](http://bit.ly/3qp2IA7)|
+|25 February 2021|Rob Gordon|[An Introduction to Web Scraping in R]<br><br> [Github site]|
+|25 February 2021|John Hackett|[RODBC]|
+|28 January 2021|Len Greski|[Reading Fixed Files in R]|
+|21 December 2020| Steve Pittard|[Predictive Modeling]|
