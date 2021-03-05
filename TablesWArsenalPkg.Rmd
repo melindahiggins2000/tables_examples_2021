@@ -1,0 +1,305 @@
+---
+title: "Tables With Arsenal Package"
+author: "Melinda Higgins"
+date: "2/28/2021"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+## Arsenal Package
+
+```{r out.width = '20%', echo=FALSE}
+knitr::include_graphics("arsenallogo.png")
+```
+
+The `arsenal` package is described on [CRAN](https://cran.r-project.org/web/packages/arsenal/index.html) as:
+
+> "An Arsenal of 'R' functions for large-scale statistical summaries, which are streamlined to work within the latest reporting tools in 'R' and 'RStudio' and which use formulas and versatile summary statistics for summary tables and models. The primary functions include tableby(), a Table-1-like summary of multiple variable types 'by' the levels of one or more categorical variables; paired(), a Table-1-like summary of multiple variable types paired across two time points; modelsum(), which performs simple model fits on one or more endpoints for many variables (univariate or adjusted for covariates); freqlist(), a powerful frequency table across many categorical variables; comparedf(), a function for comparing data.frames; and write2(), a function to output tables to a document."
+
+The documentation for the `arsenal` package can be found at:
+
+* CRAN [https://cran.r-project.org/web/packages/arsenal/index.html](https://cran.r-project.org/web/packages/arsenal/index.html)
+* custom `pkgdown` website [https://mayoverse.github.io/arsenal/](https://mayoverse.github.io/arsenal/)
+* on Github [https://github.com/mayoverse/arsenal](https://github.com/mayoverse/arsenal)
+
+But the real beauty of the `arsenal` package is that it "knits" to HTML, PDF and DOCX nicely to all 3 formats!! The `knitr::kable()` function also "knits" to these 3 formats well, but `kable()` only makes nicely formatted tables for "rectangular" data that is already compiled like these object formats:
+
+* `table`
+* `data.frame`
+* `matrix`
+* and _(I think)_ `data.table`
+
+The `arsenal` package takes this table formatting a step further by creating "smarter" tables that provide summary statistics in a table format by variables of choice. You can also create tables by groupings with statistical comparison tests performed with p-values added to those tables.
+
+## Example Dataset - Palmer Penguins
+
+Let's load the Palmer Penguins dataset from the `palmerpenguins` package.
+
+```{r}
+library(palmerpenguins)
+library(dplyr)
+```
+
+Let's use the `arsenal` package to get some summary statistics for the body measurements.
+
+First let's use the basic `summary()` and the `knitr::kable()` functions to make a simple summary table.
+
+```{r}
+penguins %>%
+  select(bill_length_mm, bill_depth_mm,
+         flipper_length_mm, body_mass_g) %>%
+  summary() %>%
+  knitr::kable()
+```
+
+This code works without too much trouble or added "knitr" options.
+
+Here is a similar table using the `tableby()` function from the `arsenal` package.
+
+After loading the package, you have to first make a "table" using the `tableby()` function. For now we will NOT list a "grouping" variable before the `~` symbol. After the `~` symbol, simply list the variables you want a summary of adding each using the plus `+` operator.
+
+```{r}
+# load package
+library(arsenal)
+
+# make table with tableby
+tab1 <- tableby(~ bill_length_mm + bill_depth_mm + 
+                  flipper_length_mm + body_mass_g,
+                data = penguins)
+```
+
+Now that the table is created and saved as an object `tab1`, we can then create the table using the `summary()` function - technically this is calling the `summary.tableby()` function from the `arsenal` package.
+
+You'll notice that the output is actually showing the markdown synatx for creating the table which is not what we want to see.
+
+```{r}
+summary(tab1)
+```
+
+So, BEFORE this will "print" correctly for each format when "knitted", you must add `results="asis"` to the R code chunk options - see below.
+
+````
+`r ''````{r results="asis"}
+summary(tab1)
+```
+````
+Now the table should look correctly formatted.
+
+```{r results="asis", echo=FALSE}
+summary(tab1)
+```
+
+```` 
+
+## Add better labels 
+
+Let's clean this table up a little bit. We'll add labels that are better to read than the native variable name using the `attr()` attributes function.
+
+```{r}
+attr(penguins$bill_length_mm,'label') <- 
+  'Bill Length (mm)'
+attr(penguins$bill_depth_mm,'label') <- 
+  'Bill Depth (mm)'
+attr(penguins$flipper_length_mm,'label') <- 
+  'Flipper Length (mm)'
+attr(penguins$body_mass_g,'label') <- 
+  'Body Mass (g)'
+```
+
+Now make the table again.
+
+```{r results="asis"}
+# make table with tableby
+tab1 <- tableby(~ bill_length_mm + bill_depth_mm + 
+                  flipper_length_mm + body_mass_g,
+                data = penguins)
+summary(tab1)
+```
+
+## Use non-parametric summary statistics - median and IQR
+
+Let's update these stats to include non-parametric statisics:
+
+* N - amount of non-missing data
+* Nmiss - number of missing
+* Median
+* q1q3 - the 25th and 75th quartiles
+* range
+
+See more options by reading the help page for `tableby.stats()`.
+
+```{r results="asis"}
+# make table with tableby
+tab1 <- tableby(~ bill_length_mm + bill_depth_mm + 
+                  flipper_length_mm + body_mass_g,
+                numeric.stats=c("N","Nmiss",
+                                "median","q1q3",
+                                "range"),
+                data = penguins)
+summary(tab1)
+```
+
+## Categorical data
+
+For variables that are character or Factor type variables, the `arsenal` package will create a table of counts/frequencies and percentages.
+
+Let's make a table for the counts and percentages for the categorical variables:
+
+* `species`
+* `island`
+* `sex`
+
+Notice that the percents are the percentage of the total number of non-missing. So for `sex`, there are 11 penguins who don't have `sex` data. So the percentages are computed for 344-11 = 333.
+
+Missing data is listed by default.
+
+```{r results = "asis"}
+tab2 <- tableby(~ species + island + sex,
+                data = penguins)
+summary(tab2)
+```
+
+## Let's look at statistics by group
+
+Another feature of the `tableby()` function is that it easily creates tables of statistics by group. This function also adds a "test of group differences" automatically. The test can be turned off as needed and customized for either parametric (anova) or non-parametric (kwt = Kruskal-Wallis) tests.
+
+### Test for normality assumptions first
+
+Let's look at the body size measurements and see if they meet the assumptions of normality first. We can look at histograms and Q-Q Plots (using `qqPlot()` from the `car` package). We could also perform the Shapiro-Wilks test for normality. 
+
+Here is an example for `bill_length_mm`.
+
+```{r}
+library(ggplot2)
+ggplot(penguins, aes(bill_length_mm)) +
+  geom_histogram(color = "black", fill = "green")
+```
+
+Notice that this is somewhat bi-modal.
+
+Here is the Q-Q Plot - this is reverse S-shaped with points falling off the line indicating deviations from normality.
+
+```{r}
+library(car)
+car::qqPlot(penguins$bill_length_mm)
+```
+
+Here is the Shapiro-Wilks' test.
+
+```{r}
+shapiro.test(penguins$bill_length_mm)
+```
+
+This is significant - also indicating deviations from normality.
+
+Let's look at the other body size variables. I have grouped these for easier printing using the `patchwork` package.
+
+NOTE: For the `patchwork` package to work, I had to switch to the `ggpubr` package to make the Q-Q Plot using `ggqqplot()` to break a ggplot plot object and save it.
+
+```{r}
+library(patchwork)
+library(ggpubr)
+
+p1 <- ggplot(penguins, aes(bill_depth_mm)) +
+  geom_histogram(color = "black", fill = "green")
+p2 <- ggqqplot(penguins$bill_depth_mm)
+
+p3 <- ggplot(penguins, aes(flipper_length_mm)) +
+  geom_histogram(color = "black", fill = "green")
+p4 <- ggqqplot(penguins$flipper_length_mm)
+
+p5 <- ggplot(penguins, aes(body_mass_g)) +
+  geom_histogram(color = "black", fill = "green")
+p6 <- ggqqplot(penguins$body_mass_g)
+
+(p1 | p2) / (p3 | p4) / (p5 | p6)
+
+```
+
+And for completeness, here are the Shapiro-Wilks tests for the rest of these variables.
+
+```{r}
+shapiro.test(penguins$bill_depth_mm)
+shapiro.test(penguins$flipper_length_mm)
+shapiro.test(penguins$body_mass_g)
+```
+
+These are all significant. So, we should probably run non-parametric statistics and tests. Although the sample size here is good (>300) and the deviations are not too bad. We could probably be ok with either ANOVA or Krusal-Wallis Tests. Let's run both and compare.
+
+### Parametric statistics and ANOVA tests for group differences
+
+We'll use the code above as our guide. Let's look at the body size measurements by species and perform ANOVA tests for the group differences.
+
+Notice I put `species` before the `~` operator in the "formula" below.
+
+```{r results="asis"}
+tab1g <- tableby(species ~ bill_length_mm + 
+                    bill_depth_mm + 
+                    flipper_length_mm + body_mass_g,
+                 data = penguins)
+summary(tab1g)
+```
+
+### Non-parametric statistics and the KW tests for group differences
+
+Now let's run this again but using the non-parametric KW (Kruskal-Wallis) tests. To do this we add `numeric.test = "kwt"` as an option.
+
+In addition to running a different statistical tests, I also updated the default summary statistics to the `"median"` and IQR (`"q1q3"`) along with `"Nmiss"` and `"range"`.
+
+```{r results="asis"}
+tab1np <- tableby(species ~ bill_length_mm + 
+                    bill_depth_mm + 
+                    flipper_length_mm + body_mass_g,
+                  numeric.stats=c("Nmiss","median","q1q3",
+                                  "range"),
+                  numeric.test = "kwt", 
+                  data = penguins)
+summary(tab1np)
+```
+
+Regardless of our approach, we can see that there are significant differences between these body size measurements by species.
+
+## Categorical data by groups - Chi-square tests
+
+Let's look at the breakdown of the penguins by species for their location (`island`) and `sex`.
+
+By default, the statistical tests runs for categorical data is the Chi-square test of independence.
+
+```{r results="asis"}
+tab2g <- tableby(species ~ island + sex,
+                 data = penguins)
+summary(tab2g)
+```
+
+We could also force it to run the Fisher's Exact tests using the "fe" option. Learn more for `help("tableby.control")`. Also see the vignette at [https://cran.r-project.org/web/packages/arsenal/vignettes/tableby.html](https://cran.r-project.org/web/packages/arsenal/vignettes/tableby.html).
+
+In the code below, I customized the table to show the results of a Chi-square test for the `species ~ island` cross table and the Fisher's exact tests for the `species ~ sex` cross table results.
+
+```{r results="asis"}
+tab2g <- tableby(species ~ chisq(island) + fe(sex),
+                 data = penguins)
+summary(tab2g)
+```
+
+### Make a better table - title and footnotes
+
+We could customize this table a little more by adding a title and setting `pfootnote` to `TRUE` to add details on the custom statistical tests.
+
+```{r results="asis"}
+tab2g <- tableby(species ~ chisq(island) + fe(sex),
+                 data = penguins)
+summary(tab2g,
+        title = "Location and Sex by Species",
+        pfootnote = TRUE)
+```
+
